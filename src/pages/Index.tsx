@@ -17,7 +17,6 @@ const NAV = [
   { id: 'home', label: 'Главная' },
   { id: 'tickets', label: 'Билеты' },
   { id: 'routes', label: 'Маршруты' },
-  { id: 'schedule', label: 'Расписание' },
   { id: 'about', label: 'О нас' },
   { id: 'contacts', label: 'Контакты' },
 ];
@@ -58,21 +57,24 @@ const TICKETS = [
 ];
 
 const ROUTES = [
-  { name: 'Центральная набережная', time: '40 мин', dist: '8 км', icon: 'MapPin' },
-  { name: 'Острова и заливы', time: '1 ч 10 мин', dist: '15 км', icon: 'TreePine' },
-  { name: 'Закатный круиз', time: '1 ч', dist: '12 км', icon: 'Sunset' },
+  { name: 'Речная заводь', time: '~45 мин', dist: '1 400 м', icon: 'Waves' },
+  { name: 'До моста', time: '~1 ч 30 мин', dist: '3 600 м', icon: 'Bridge' },
+  { name: 'До бассейна', time: '~1 ч 30 мин', dist: '6 км', icon: 'Droplets' },
 ];
 
-const SCHEDULE = [
-  { time: '10:00', route: 'Центральная набережная', seats: 'Свободно' },
-  { time: '12:30', route: 'Острова и заливы', seats: 'Свободно' },
-  { time: '15:00', route: 'Центральная набережная', seats: 'Мало мест' },
-  { time: '18:30', route: 'Закатный круиз', seats: 'Свободно' },
-];
+interface BookingData {
+  format: string;
+  date: string;
+  name: string;
+  phone: string;
+  email: string;
+}
 
 const Index = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selected, setSelected] = useState<string>('');
+  const [confirmed, setConfirmed] = useState<BookingData | null>(null);
+  const [form, setForm] = useState({ date: '', name: '', phone: '', email: '' });
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
@@ -83,6 +85,93 @@ const Index = () => {
     setSelected(name);
     document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const handleBooking = () => {
+    if (!selected || !form.date || !form.name || !form.phone) return;
+    setConfirmed({ format: selected, ...form });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const ticketCode = confirmed
+    ? `RGT-${confirmed.date.replace(/-/g, '')}-${Math.floor(Math.random() * 9000 + 1000)}`
+    : '';
+
+  if (confirmed) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8 animate-fade-up">
+            <span className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 text-accent mb-4">
+              <Icon name="CheckCircle2" size={36} />
+            </span>
+            <h1 className="font-display font-extrabold text-3xl tracking-tight">Бронь подтверждена!</h1>
+            <p className="mt-2 text-muted-foreground">Сохрани QR-код — предъяви его на причале</p>
+          </div>
+
+          <div className="bg-card rounded-3xl border border-border p-7 shadow-sm animate-fade-up">
+            {/* QR placeholder */}
+            <div className="flex flex-col items-center mb-7">
+              <div className="w-44 h-44 bg-foreground rounded-2xl flex items-center justify-center relative overflow-hidden">
+                {/* Imitated QR pattern */}
+                <svg width="160" height="160" viewBox="0 0 160 160" className="fill-background">
+                  {/* corners */}
+                  <rect x="8" y="8" width="44" height="44" rx="4" className="fill-background stroke-background stroke-2" fill="none" stroke="currentColor" strokeWidth="0"/>
+                  <rect x="8" y="8" width="44" height="44" rx="4" fill="none" stroke="white" strokeWidth="6"/>
+                  <rect x="20" y="20" width="20" height="20" rx="2" fill="white"/>
+                  <rect x="108" y="8" width="44" height="44" rx="4" fill="none" stroke="white" strokeWidth="6"/>
+                  <rect x="120" y="20" width="20" height="20" rx="2" fill="white"/>
+                  <rect x="8" y="108" width="44" height="44" rx="4" fill="none" stroke="white" strokeWidth="6"/>
+                  <rect x="20" y="120" width="20" height="20" rx="2" fill="white"/>
+                  {/* dots */}
+                  {[68,80,92,104].map(x => [68,80,92,104].map(y => (
+                    Math.random() > 0.45 ? <rect key={`${x}-${y}`} x={x} y={y} width="8" height="8" rx="1" fill="white"/> : null
+                  )))}
+                  <rect x="68" y="68" width="8" height="8" rx="1" fill="white"/>
+                  <rect x="80" y="80" width="8" height="8" rx="1" fill="white"/>
+                  <rect x="92" y="68" width="8" height="8" rx="1" fill="white"/>
+                  <rect x="68" y="92" width="8" height="8" rx="1" fill="white"/>
+                  <rect x="104" y="80" width="8" height="8" rx="1" fill="white"/>
+                  <rect x="80" y="104" width="8" height="8" rx="1" fill="white"/>
+                  <rect x="92" y="92" width="8" height="8" rx="1" fill="white"/>
+                </svg>
+              </div>
+              <span className="mt-3 font-display font-bold text-sm tracking-widest text-muted-foreground">{ticketCode}</span>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              {[
+                { icon: 'Ticket', label: 'Формат', value: confirmed.format },
+                { icon: 'Calendar', label: 'Дата', value: new Date(confirmed.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) },
+                { icon: 'User', label: 'Пассажир', value: confirmed.name },
+                { icon: 'Phone', label: 'Телефон', value: confirmed.phone },
+                { icon: 'MapPin', label: 'Место отправления', value: 'р.п Краснозерское, Главный причал №13' },
+              ].map((r) => (
+                <div key={r.label} className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
+                  <span className="grid place-items-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
+                    <Icon name={r.icon} size={16} />
+                  </span>
+                  <span className="text-muted-foreground w-24 shrink-0">{r.label}</span>
+                  <span className="font-semibold">{r.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 p-4 rounded-2xl bg-accent/10 text-accent text-sm font-medium flex items-start gap-2">
+              <Icon name="Info" size={18} className="shrink-0 mt-0.5" />
+              Приходи за 10 минут до отправления. Работаем только в июле.
+            </div>
+          </div>
+
+          <button
+            onClick={() => { setConfirmed(null); setSelected(''); setForm({ date: '', name: '', phone: '', email: '' }); }}
+            className="mt-6 w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            ← Вернуться на главную
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -266,7 +355,7 @@ const Index = () => {
                 ? `Выбранный формат: ${selected}. Заполните данные ниже.`
                 : 'Выберите формат катания выше, затем заполните свои данные.'}
             </p>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 gap-4">
               <Select value={selected} onValueChange={setSelected}>
                 <SelectTrigger className="rounded-xl h-12">
                   <SelectValue placeholder="Формат катания" />
@@ -279,28 +368,51 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Input type="date" className="rounded-xl h-12" />
-              <Select>
-                <SelectTrigger className="rounded-xl h-12">
-                  <SelectValue placeholder="Время" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCHEDULE.map((s) => (
-                    <SelectItem key={s.time} value={s.time}>
-                      {s.time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <Input
+                  type="date"
+                  className="rounded-xl h-12"
+                  min="2026-07-01"
+                  max="2026-07-31"
+                  value={form.date}
+                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">Только июль</span>
+              </div>
             </div>
             <div className="grid md:grid-cols-3 gap-4 mt-4">
-              <Input placeholder="Ваше имя" className="rounded-xl h-12" />
-              <Input placeholder="Телефон" className="rounded-xl h-12" />
-              <Input placeholder="Email" className="rounded-xl h-12" />
+              <Input
+                placeholder="Ваше имя *"
+                className="rounded-xl h-12"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              />
+              <Input
+                placeholder="Телефон *"
+                className="rounded-xl h-12"
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              />
+              <Input
+                placeholder="Email"
+                className="rounded-xl h-12"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              />
             </div>
-            <Button className="mt-5 rounded-xl h-12 px-8 font-semibold">
-              Забронировать
-            </Button>
+            <div className="mt-5 flex items-center gap-4">
+              <Button
+                className="rounded-xl h-12 px-8 font-semibold disabled:opacity-50"
+                disabled={!selected || !form.date || !form.name || !form.phone}
+                onClick={handleBooking}
+              >
+                Забронировать
+                <Icon name="ArrowRight" size={18} className="ml-1" />
+              </Button>
+              {(!selected || !form.date || !form.name || !form.phone) && (
+                <span className="text-sm text-muted-foreground">Заполните обязательные поля *</span>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -333,45 +445,6 @@ const Index = () => {
                     <Icon name="Route" size={16} /> {r.dist}
                   </span>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SCHEDULE */}
-      <section id="schedule" className="py-20 md:py-28 bg-secondary/40">
-        <div className="container">
-          <div className="max-w-xl">
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl tracking-tight">
-              Расписание
-            </h2>
-            <p className="mt-4 text-muted-foreground text-lg">
-              Отправления каждый день. Приходи за 15 минут до старта.
-            </p>
-          </div>
-
-          <div className="mt-12 bg-card rounded-3xl border border-border overflow-hidden">
-            {SCHEDULE.map((s, i) => (
-              <div
-                key={s.time}
-                className={`flex items-center justify-between p-5 md:px-8 ${
-                  i !== SCHEDULE.length - 1 ? 'border-b border-border' : ''
-                }`}
-              >
-                <div className="flex items-center gap-5">
-                  <span className="font-display font-bold text-xl text-primary w-16">{s.time}</span>
-                  <span className="font-medium">{s.route}</span>
-                </div>
-                <span
-                  className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                    s.seats === 'Свободно'
-                      ? 'bg-accent/10 text-accent'
-                      : 'bg-destructive/10 text-destructive'
-                  }`}
-                >
-                  {s.seats}
-                </span>
               </div>
             ))}
           </div>
@@ -422,39 +495,28 @@ const Index = () => {
 
       {/* CONTACTS */}
       <section id="contacts" className="py-20 md:py-28 bg-primary text-primary-foreground">
-        <div className="container grid lg:grid-cols-2 gap-12">
-          <div>
-            <h2 className="font-display font-extrabold text-3xl md:text-5xl tracking-tight">
-              Контакты
-            </h2>
-            <p className="mt-4 text-primary-foreground/80 text-lg max-w-md">
-              Свяжись с нами или приходи на причал — будем рады прокатить!
-            </p>
-            <div className="mt-8 space-y-4">
-              {[
-                { icon: 'Phone', t: '+7 (900) 123-45-67' },
-                { icon: 'Mail', t: 'hello@rechgortrans.ru' },
-                { icon: 'MapPin', t: 'Центральная набережная, причал №3' },
-                { icon: 'Clock', t: 'Ежедневно 10:00 — 21:00' },
-              ].map((c) => (
-                <div key={c.t} className="flex items-center gap-3">
-                  <span className="grid place-items-center w-10 h-10 rounded-xl bg-primary-foreground/10">
-                    <Icon name={c.icon} size={20} />
-                  </span>
-                  <span className="font-medium">{c.t}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-primary-foreground text-foreground rounded-3xl p-7 md:p-8">
-            <h3 className="font-display font-bold text-xl mb-5">Остались вопросы?</h3>
-            <div className="space-y-4">
-              <Input placeholder="Ваше имя" className="rounded-xl h-12" />
-              <Input placeholder="Телефон или email" className="rounded-xl h-12" />
-              <Input placeholder="Сообщение" className="rounded-xl h-12" />
-              <Button className="w-full rounded-xl h-12 font-semibold">Отправить</Button>
-            </div>
+        <div className="container">
+          <h2 className="font-display font-extrabold text-3xl md:text-5xl tracking-tight">
+            Контакты
+          </h2>
+          <p className="mt-4 text-primary-foreground/80 text-lg max-w-md">
+            Приходи на причал или свяжись с нами — будем рады!
+          </p>
+          <div className="mt-8 grid sm:grid-cols-2 md:grid-cols-4 gap-5">
+            {[
+              { icon: 'Phone', label: 'Телефон', t: '+7 983 705 1983' },
+              { icon: 'Mail', label: 'Email', t: 'v69607972@gmail.com' },
+              { icon: 'MapPin', label: 'Адрес', t: 'р.п Краснозерское, Главный причал №13' },
+              { icon: 'Calendar', label: 'Сезон', t: 'Июль 2026' },
+            ].map((c) => (
+              <div key={c.label} className="bg-primary-foreground/10 rounded-2xl p-5">
+                <span className="grid place-items-center w-10 h-10 rounded-xl bg-primary-foreground/10 mb-3">
+                  <Icon name={c.icon} size={20} />
+                </span>
+                <div className="text-xs text-primary-foreground/60 mb-1">{c.label}</div>
+                <div className="font-semibold leading-snug">{c.t}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
