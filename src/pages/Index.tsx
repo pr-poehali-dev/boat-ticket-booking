@@ -25,9 +25,9 @@ const NAV = [
 const TICKETS = [
   {
     icon: 'Sailboat',
-    name: 'Катание на лодке',
-    desc: 'Спокойная прогулка по реке на комфортной моторной лодке с капитаном.',
-    price: '1 200 ₽',
+    name: 'Катание на надувной лодке',
+    desc: 'Спокойная прогулка по реке на комфортной надувной лодке с капитаном.',
+    price: '500 ₽',
     unit: 'за человека',
     tag: 'Хит',
   },
@@ -35,15 +35,23 @@ const TICKETS = [
     icon: 'Waves',
     name: 'Надувная плюшка',
     desc: 'Драйв и брызги! Катание на буксируемом надувном кольце за катером.',
-    price: '900 ₽',
-    unit: '15 минут',
+    price: '300 ₽',
+    unit: '30 минут',
     tag: 'Экстрим',
+  },
+  {
+    icon: 'Ship',
+    name: 'Катамаран',
+    desc: 'Спокойная прогулка по реке на катамаране.',
+    price: '600 ₽',
+    unit: 'за человека',
+    tag: 'Уют',
   },
   {
     icon: 'Users',
     name: 'Семейный пакет',
     desc: 'Лодка + плюшка для всей семьи. До 4 человек, выгодная цена.',
-    price: '3 500 ₽',
+    price: '1 000 ₽',
     unit: 'до 4 чел.',
     tag: 'Выгодно',
   },
@@ -64,10 +72,16 @@ const SCHEDULE = [
 
 const Index = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selected, setSelected] = useState<string>('');
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const chooseFormat = (name: string) => {
+    setSelected(name);
+    document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -161,7 +175,7 @@ const Index = () => {
 
             <div className="mt-10 flex gap-8">
               {[
-                { n: '12 лет', l: 'на воде' },
+                { n: '10 лет', l: 'на воде' },
                 { n: '50 000+', l: 'довольных гостей' },
                 { n: '4.9', l: 'рейтинг' },
               ].map((s) => (
@@ -196,47 +210,73 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-3 gap-6">
-            {TICKETS.map((t) => (
-              <div
-                key={t.name}
-                className="group bg-card rounded-3xl p-7 border border-border hover:border-primary/40 hover:shadow-xl transition-all"
-              >
-                <div className="flex items-center justify-between mb-5">
-                  <span className="grid place-items-center w-14 h-14 rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <Icon name={t.icon} size={26} />
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold">
-                    {t.tag}
-                  </span>
-                </div>
-                <h3 className="font-display font-bold text-xl">{t.name}</h3>
-                <p className="mt-2 text-muted-foreground text-sm leading-relaxed">{t.desc}</p>
-                <div className="mt-6 flex items-end justify-between">
-                  <div>
+          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {TICKETS.map((t) => {
+              const active = selected === t.name;
+              return (
+                <button
+                  key={t.name}
+                  type="button"
+                  onClick={() => chooseFormat(t.name)}
+                  className={`group text-left bg-card rounded-3xl p-7 border-2 transition-all hover:shadow-xl ${
+                    active
+                      ? 'border-primary shadow-xl ring-2 ring-primary/20'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-5">
+                    <span
+                      className={`grid place-items-center w-14 h-14 rounded-2xl transition-colors ${
+                        active
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground'
+                      }`}
+                    >
+                      <Icon name={t.icon} size={26} />
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold">
+                      {t.tag}
+                    </span>
+                  </div>
+                  <h3 className="font-display font-bold text-lg">{t.name}</h3>
+                  <p className="mt-2 text-muted-foreground text-sm leading-relaxed">{t.desc}</p>
+                  <div className="mt-6">
                     <div className="font-display font-extrabold text-2xl">{t.price}</div>
                     <div className="text-xs text-muted-foreground">{t.unit}</div>
                   </div>
-                  <Button className="rounded-full font-semibold">Купить</Button>
-                </div>
-              </div>
-            ))}
+                  <div
+                    className={`mt-5 flex items-center gap-1.5 text-sm font-semibold ${
+                      active ? 'text-primary' : 'text-muted-foreground'
+                    }`}
+                  >
+                    <Icon name={active ? 'CheckCircle2' : 'Circle'} size={18} />
+                    {active ? 'Выбрано' : 'Выбрать'}
+                  </div>
+                </button>
+              );
+            })}
           </div>
-
           {/* BOOKING FORM */}
-          <div className="mt-12 bg-card rounded-3xl p-7 md:p-9 border border-border shadow-sm">
-            <h3 className="font-display font-bold text-xl mb-6 flex items-center gap-2">
-              <Icon name="Ticket" size={22} className="text-primary" /> Быстрое бронирование
+          <div id="booking" className="mt-12 bg-card rounded-3xl p-7 md:p-9 border border-border shadow-sm scroll-mt-24">
+            <h3 className="font-display font-bold text-xl mb-2 flex items-center gap-2">
+              <Icon name="Ticket" size={22} className="text-primary" /> Бронирование
             </h3>
-            <div className="grid md:grid-cols-4 gap-4">
-              <Select>
+            <p className="text-sm text-muted-foreground mb-6">
+              {selected
+                ? `Выбранный формат: ${selected}. Заполните данные ниже.`
+                : 'Выберите формат катания выше, затем заполните свои данные.'}
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              <Select value={selected} onValueChange={setSelected}>
                 <SelectTrigger className="rounded-xl h-12">
-                  <SelectValue placeholder="Тип катания" />
+                  <SelectValue placeholder="Формат катания" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="boat">Катание на лодке</SelectItem>
-                  <SelectItem value="tube">Надувная плюшка</SelectItem>
-                  <SelectItem value="family">Семейный пакет</SelectItem>
+                  {TICKETS.map((t) => (
+                    <SelectItem key={t.name} value={t.name}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Input type="date" className="rounded-xl h-12" />
@@ -252,10 +292,15 @@ const Index = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Button className="rounded-xl h-12 font-semibold">
-                Забронировать
-              </Button>
             </div>
+            <div className="grid md:grid-cols-3 gap-4 mt-4">
+              <Input placeholder="Ваше имя" className="rounded-xl h-12" />
+              <Input placeholder="Телефон" className="rounded-xl h-12" />
+              <Input placeholder="Email" className="rounded-xl h-12" />
+            </div>
+            <Button className="mt-5 rounded-xl h-12 px-8 font-semibold">
+              Забронировать
+            </Button>
           </div>
         </div>
       </section>
