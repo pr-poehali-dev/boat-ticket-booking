@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import func2url from '../../backend/func2url.json';
+
+const API = func2url.bookings;
 
 const HERO_IMG =
   'https://cdn.poehali.dev/projects/a5dd474c-e0ba-4701-8436-3b7dfc217e42/files/89539e0d-5977-4fd1-83bc-f386f0e81207.jpg';
@@ -71,10 +75,14 @@ interface BookingData {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [selected, setSelected] = useState<string>('');
   const [confirmed, setConfirmed] = useState<BookingData | null>(null);
+  const [ticketCode, setTicketCode] = useState('');
   const [form, setForm] = useState({ date: '', name: '', phone: '', email: '' });
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
@@ -86,15 +94,25 @@ const Index = () => {
     document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (!selected || !form.date || !form.name || !form.phone) return;
+    setBookingLoading(true);
+    setBookingError('');
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format: selected, date: form.date, name: form.name, phone: form.phone, email: form.email }),
+    });
+    const data = await res.json();
+    setBookingLoading(false);
+    if (!res.ok) {
+      setBookingError(data.error || 'Ошибка бронирования. Попробуйте ещё раз.');
+      return;
+    }
+    setTicketCode(data.ticket_code);
     setConfirmed({ format: selected, ...form });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const ticketCode = confirmed
-    ? `RGT-${confirmed.date.replace(/-/g, '')}-${Math.floor(Math.random() * 9000 + 1000)}`
-    : '';
 
   if (confirmed) {
     return (
@@ -162,12 +180,21 @@ const Index = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => { setConfirmed(null); setSelected(''); setForm({ date: '', name: '', phone: '', email: '' }); }}
-            className="mt-6 w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            ← Вернуться на главную
-          </button>
+          <div className="mt-6 flex flex-col gap-2">
+            <Button
+              onClick={() => navigate('/cabinet')}
+              variant="outline"
+              className="w-full rounded-xl h-12 font-semibold gap-2"
+            >
+              <Icon name="User" size={16} /> Мои билеты
+            </Button>
+            <button
+              onClick={() => { setConfirmed(null); setTicketCode(''); setSelected(''); setForm({ date: '', name: '', phone: '', email: '' }); }}
+              className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors py-2"
+            >
+              ← Вернуться на главную
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -200,9 +227,14 @@ const Index = () => {
             ))}
           </nav>
 
-          <Button onClick={() => scrollTo('tickets')} className="hidden md:flex rounded-full font-semibold">
-            Купить билет
-          </Button>
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" onClick={() => navigate('/cabinet')} className="rounded-full font-semibold gap-1.5">
+              <Icon name="User" size={16} /> Мои билеты
+            </Button>
+            <Button onClick={() => scrollTo('tickets')} className="rounded-full font-semibold">
+              Купить билет
+            </Button>
+          </div>
 
           <button className="md:hidden" onClick={() => setMenuOpen((v) => !v)}>
             <Icon name={menuOpen ? 'X' : 'Menu'} size={26} />
@@ -221,7 +253,10 @@ const Index = () => {
                   {n.label}
                 </button>
               ))}
-              <Button onClick={() => scrollTo('tickets')} className="mt-2 rounded-full">
+              <Button variant="outline" onClick={() => navigate('/cabinet')} className="mt-2 rounded-full gap-1.5">
+                <Icon name="User" size={15} /> Мои билеты
+              </Button>
+              <Button onClick={() => scrollTo('tickets')} className="mt-1 rounded-full">
                 Купить билет
               </Button>
             </div>
@@ -400,17 +435,24 @@ const Index = () => {
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
             </div>
-            <div className="mt-5 flex items-center gap-4">
+            <div className="mt-5 flex flex-wrap items-center gap-4">
               <Button
                 className="rounded-xl h-12 px-8 font-semibold disabled:opacity-50"
-                disabled={!selected || !form.date || !form.name || !form.phone}
+                disabled={!selected || !form.date || !form.name || !form.phone || bookingLoading}
                 onClick={handleBooking}
               >
-                Забронировать
-                <Icon name="ArrowRight" size={18} className="ml-1" />
+                {bookingLoading
+                  ? <><Icon name="Loader2" size={18} className="animate-spin mr-2" /> Бронируем...</>
+                  : <>Забронировать <Icon name="ArrowRight" size={18} className="ml-1" /></>
+                }
               </Button>
-              {(!selected || !form.date || !form.name || !form.phone) && (
+              {(!selected || !form.date || !form.name || !form.phone) && !bookingLoading && (
                 <span className="text-sm text-muted-foreground">Заполните обязательные поля *</span>
+              )}
+              {bookingError && (
+                <span className="text-sm text-destructive flex items-center gap-1.5">
+                  <Icon name="AlertCircle" size={15} /> {bookingError}
+                </span>
               )}
             </div>
           </div>

@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Create booking",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "format": "Надувная плюшка",
+        "date": "2026-07-15",
+        "name": "Иван Иванов",
+        "phone": "+79001234567",
+        "email": "test@test.ru"
+      },
+      "expectedStatus": 200,
+      "expectedBody": { "format": "Надувная плюшка" },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get user bookings",
+      "method": "GET",
+      "path": "/",
+      "headers": { "X-User-Phone": "+79001234567" },
+      "expectedStatus": 200,
+      "expectedBody": { "bookings": [] },
+      "ignoreExtraFields": true,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
