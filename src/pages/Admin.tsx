@@ -5,6 +5,9 @@ import Icon from '@/components/ui/icon';
 import func2url from '../../backend/func2url.json';
 
 const API = func2url.bookings;
+const WEBHOOK_TARGET = func2url['telegram-bot'];
+const BOT_WEBHOOK_REGISTER_URL = (token: string) =>
+  `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(WEBHOOK_TARGET)}`;
 
 interface Booking {
   id: number;
@@ -25,6 +28,9 @@ const Admin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [tgToken, setTgToken] = useState('');
+  const [tgStep, setTgStep] = useState<'idle' | 'token' | 'done'>('idle');
+  const [tgWebhookUrl, setTgWebhookUrl] = useState('');
 
   const login = async () => {
     setLoading(true);
@@ -126,6 +132,89 @@ const Admin = () => {
       </header>
 
       <main className="container py-8">
+
+        {/* Telegram Setup */}
+        <div className="bg-card rounded-3xl border border-border p-6 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <span className="grid place-items-center w-10 h-10 rounded-xl bg-[#229ED9]/10 text-[#229ED9]">
+                <Icon name="Send" size={20} />
+              </span>
+              <div>
+                <div className="font-display font-bold">Telegram-бот</div>
+                <div className="text-sm text-muted-foreground">Уведомления о новых бронях в Telegram</div>
+              </div>
+            </div>
+            {tgStep === 'idle' && (
+              <Button variant="outline" className="rounded-full gap-2" onClick={() => setTgStep('token')}>
+                <Icon name="Zap" size={15} /> Подключить бота
+              </Button>
+            )}
+          </div>
+
+          {tgStep === 'token' && (
+            <div className="mt-5 border-t border-border pt-5 space-y-4">
+              <p className="text-sm font-semibold">Шаг 1 — введи токен бота:</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="1234567890:AAFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  className="rounded-xl h-10 font-mono text-sm"
+                  value={tgToken}
+                  onChange={(e) => setTgToken(e.target.value)}
+                />
+                <Button
+                  className="rounded-xl px-5 shrink-0"
+                  disabled={!tgToken.includes(':')}
+                  onClick={() => {
+                    const url = BOT_WEBHOOK_REGISTER_URL(tgToken);
+                    setTgWebhookUrl(url);
+                    setTgStep('done');
+                  }}
+                >
+                  Далее
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Токен можно скопировать у @BotFather → выбери бота → API Token</p>
+            </div>
+          )}
+
+          {tgStep === 'done' && (
+            <div className="mt-5 border-t border-border pt-5 space-y-4">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-accent/10 text-accent text-sm">
+                <Icon name="Info" size={16} className="shrink-0 mt-0.5" />
+                <span>Нажми кнопку ниже — откроется вкладка браузера, увидишь <b>{"\"ok\":true"}</b> — значит готово!</span>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Шаг 2 — зарегистрировать webhook:</p>
+                <a
+                  href={tgWebhookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#229ED9] text-white font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-[#1a8cbf] transition-colors"
+                >
+                  <Icon name="ExternalLink" size={15} /> Открыть и зарегистрировать
+                </a>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Шаг 3 — активировать уведомления:</p>
+                <p className="text-sm text-muted-foreground">
+                  Открой своего бота в Telegram и напиши команду:
+                </p>
+                <code className="block bg-muted px-4 py-2.5 rounded-xl text-sm font-mono">
+                  /start {key}
+                </code>
+                <p className="text-xs text-muted-foreground">После этого ты будешь получать уведомление в Telegram при каждом новом бронировании.</p>
+              </div>
+
+              <Button variant="outline" size="sm" className="rounded-full" onClick={() => { setTgStep('idle'); setTgToken(''); }}>
+                Сбросить
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[

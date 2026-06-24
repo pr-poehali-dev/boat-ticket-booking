@@ -3,12 +3,49 @@ import os
 import psycopg2
 import random
 import string
+import urllib.request
 from datetime import datetime
 
 SCHEMA = "t_p82742348_boat_ticket_booking"
+TG_API = "https://api.telegram.org/bot"
+
 
 def get_conn():
     return psycopg2.connect(os.environ["DATABASE_URL"])
+
+
+def notify_admin(ticket_code, format_, trip_date, name, phone):
+    try:
+        token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+        if not token:
+            return
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT value FROM {SCHEMA}.admin_settings WHERE key = 'admin_chat_id'")
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if not row:
+            return
+        chat_id = row[0]
+        date_fmt = trip_date
+        text = (
+            f"🎉 <b>Новое бронирование!</b>\n\n"
+            f"🎫 <code>{ticket_code}</code>\n"
+            f"🚤 {format_}\n"
+            f"📅 {date_fmt}\n"
+            f"👤 {name}\n"
+            f"📞 {phone}"
+        )
+        payload = json.dumps({"chat_id": chat_id, "text": text, "parse_mode": "HTML"}).encode()
+        req = urllib.request.Request(
+            f"{TG_API}{token}/sendMessage",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass
 
 def resp(status, data, headers=None):
     h = {
@@ -71,6 +108,8 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         cur.close()
         conn.close()
+
+        notify_admin(row[1], format_, trip_date, name, phone)
 
         return resp(200, {
             "id": row[0],

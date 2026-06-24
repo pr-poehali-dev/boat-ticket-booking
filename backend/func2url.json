@@ -1,3 +1,5 @@
 {
+  "setup-webhook": "https://functions.poehali.dev/5643a0bc-1237-419d-aaf1-65233cfff8d9",
+  "telegram-bot": "https://functions.poehali.dev/e5ea13ae-4089-4736-8814-bc699f9b49e2",
   "bookings": "https://functions.poehali.dev/f086fdfe-23af-4faf-b178-1a28994d5b39"
 }
